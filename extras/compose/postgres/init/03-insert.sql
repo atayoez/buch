@@ -1,5 +1,7 @@
 -- Testdaten. Feste IDs unterhalb von 1000, damit die IDENTITY-Sequenz nicht kollidiert.
---   psql --dbname=buch --username=buch --file=insert.sql
+-- Wird beim ersten Start des Containers automatisch ausgeführt (siehe 01-create-schema.sql).
+
+SET search_path = 'buch';
 
 INSERT INTO buch (id, version, titel, isbn, rating, art, preis, rabatt, lieferbar, erscheinungsdatum, homepage, schlagwoerter, erzeugt, aktualisiert)
 OVERRIDING SYSTEM VALUE VALUES

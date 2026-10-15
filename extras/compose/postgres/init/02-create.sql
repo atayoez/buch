@@ -1,10 +1,9 @@
 -- Tabellen für die Domäne "Buch":
 --   buch 1:1 verlag      (UNIQUE auf verlag.buch_id)
 --   buch 1:N rezension
--- Aufruf in der DB "buch" als User "buch":
---   psql --dbname=buch --username=buch --file=create.sql
+-- Wird beim ersten Start des Containers automatisch ausgeführt (siehe 01-create-schema.sql).
 
-SET default_tablespace = buchspace;
+SET search_path = 'buch';
 
 -- https://www.postgresql.org/docs/current/datatype-enum.html
 CREATE TYPE buchart AS ENUM ('HARDCOVER', 'PAPERBACK', 'EPUB');

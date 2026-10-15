@@ -1,0 +1,36 @@
+# PostgreSQL 19 als Docker Container für die Domäne "Buch".
+#
+#   docker compose up          # starten (beim ersten Start werden die Skripte in ./init ausgeführt)
+#   docker compose down        # stoppen, Daten bleiben im Volume "buch_pg_data"
+#   docker compose down -v     # stoppen und Daten löschen -> nächster Start initialisiert neu
+---
+services:
+  postgres:
+    # https://hub.docker.com/_/postgres
+    image: postgres:19beta4-trixie
+    container_name: buch-postgres
+    ports:
+      - published: 5432
+        target: 5432
+    environment:
+      TZ: Europe/Berlin
+      # Entrypoint legt beim ersten Start DB-User, DB und Passwort an
+      # https://github.com/docker-library/docs/blob/master/postgres/README.md#environment-variables
+      POSTGRES_USER: buch
+      POSTGRES_PASSWORD: p
+      POSTGRES_DB: buch
+    volumes:
+      - buch_pg_data:/var/lib/postgresql
+      # SQL-Skripte, die beim ersten Start in alphabetischer Reihenfolge ausgeführt werden
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD, pg_isready, --dbname=buch, --username=buch]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  buch_pg_data:
+    name: buch_pg_data
