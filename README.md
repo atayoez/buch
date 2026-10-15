@@ -31,7 +31,7 @@ cd buch
 
 ## Datenbank starten
 
-PostgreSQL 19 läuft als Docker Container mit dem offiziellen Image von Docker Hub.
+PostgreSQL 18 läuft als Docker Container mit dem offiziellen Image von Docker Hub.
 Beim **ersten** Start legt der Container automatisch den DB-User `buch` (Passwort `p`),
 die Datenbank `buch` und das Schema `buch` an und führt die Skripte aus
 `extras/compose/postgres/init` aus:

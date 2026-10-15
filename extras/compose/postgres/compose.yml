@@ -1,4 +1,4 @@
-# PostgreSQL 19 als Docker Container für die Domäne "Buch".
+# PostgreSQL 18 als Docker Container für die Domäne "Buch".
 #
 #   docker compose up          # starten (beim ersten Start werden die Skripte in ./init ausgeführt)
 #   docker compose down        # stoppen, Daten bleiben im Volume "buch_pg_data"
@@ -7,7 +7,7 @@
 services:
   postgres:
     # https://hub.docker.com/_/postgres
-    image: postgres:19beta4-trixie
+    image: postgres:18-trixie
     container_name: buch-postgres
     ports:
       - published: 5432
