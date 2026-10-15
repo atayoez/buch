@@ -57,7 +57,7 @@ in den Container kopieren und in der angegebenen Reihenfolge ausführen.
 Das Passwort für beide DB-User ist `p`.
 
 ```shell
-docker compose -f <KURSBEISPIEL>/extras/compose/postgres/compose.yml exec postgres mkdir -p /tablespace/buch
+docker exec postgres mkdir -p /tablespace/buch
 docker cp extras/compose/postgres/init/buch/sql postgres:/tmp/buch-sql
 
 docker exec -e PGPASSWORD=p postgres psql --dbname=postgres --username=postgres --file=/tmp/buch-sql/create-db.sql
