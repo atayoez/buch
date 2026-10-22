@@ -15,6 +15,7 @@ Domäne: `Buch` mit genau einem `Verlag` (1:1) und beliebig vielen `Rezensionen`
 - [DB-Browser](#db-browser)
 - [Appserver](#appserver)
   - [REST-Schnittstelle (GET)](#rest-schnittstelle-get)
+  - [REST-Schnittstelle (PUT)](#rest-schnittstelle-put)
 - [Tests](#tests)
 - [Codeanalyse, Formatierung und Typprüfung](#codeanalyse-formatierung-und-typprüfung)
 - [Hinweis für Linux mit podman](#hinweis-für-linux-mit-podman)
@@ -134,6 +135,27 @@ Interaktive Dokumentation: `http://localhost:8000/docs`
 
 Fehler: `404` mit `{"detail": "..."}`, falls nichts gefunden wurde; `422`, falls ein
 Parameter ungültig ist (Validierung durch Pydantic und FastAPI).
+
+### REST-Schnittstelle (PUT)
+
+| Request                                   | Beschreibung                                                     |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `PUT /rest/{id}` + `If-Match: "<version>"` | Buch vollständig überschreiben; Antwort `204` mit neuem `ETag`  |
+
+Der Request-Body enthält `titel`, `isbn`, `rating`, `art`, `preis`, `rabatt`,
+`lieferbar`, `erscheinungsdatum`, `homepage` und `schlagwoerter`; Verlag und
+Rezensionen sind nicht änderbar. Die Validierung übernimmt Pydantic (`422`).
+
+**Lost Updates** werden durch optimistische Synchronisation vermieden: `If-Match`
+muss die Versionsnummer aus dem `ETag` des letzten `GET` enthalten. Ist sie veraltet,
+hat jemand anderes inzwischen geändert und der Server antwortet mit `412`. Fehlt der
+Header, antwortet er mit `428`. Zusätzlich prüft SQLAlchemy die Version beim `UPDATE`
+(`version_id_col`).
+
+```shell
+curl -i -X PUT http://localhost:8000/rest/50 -H 'If-Match: "0"' -H 'Content-Type: application/json' \
+  -d '{"titel":"Epsilon neu","isbn":"978-3-8273-3007-2","rating":4,"art":"PAPERBACK","preis":"55.50","rabatt":"0.055","lieferbar":true}'
+```
 
 ```shell
 curl -i http://localhost:8000/rest/1
