@@ -14,6 +14,8 @@ Domäne: `Buch` mit genau einem `Verlag` (1:1) und beliebig vielen `Rezensionen`
 - [Datenbank zurücksetzen](#datenbank-zurücksetzen)
 - [DB-Browser](#db-browser)
 - [Appserver](#appserver)
+  - [REST-Schnittstelle (GET)](#rest-schnittstelle-get)
+- [Tests](#tests)
 - [Codeanalyse, Formatierung und Typprüfung](#codeanalyse-formatierung-und-typprüfung)
 - [Hinweis für Linux mit podman](#hinweis-für-linux-mit-podman)
 
@@ -116,6 +118,39 @@ Appserver starten, danach `http://localhost:8000` bzw. `http://localhost:8000/do
 
 ```shell
 uv run buch
+```
+
+### REST-Schnittstelle (GET)
+
+Interaktive Dokumentation: `http://localhost:8000/docs`
+
+| Request                        | Beschreibung                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `GET /rest/{id}`               | Ein Buch mit Verlag und Rezensionen; Header `ETag` mit der Versionsnummer     |
+| `GET /rest/{id}` + `If-None-Match: "<version>"` | Bedingter GET: `304 Not Modified`, falls unverändert            |
+| `GET /rest`                    | Alle Bücher (ohne Rezensionen)                                               |
+| `GET /rest?titel=a&art=HARDCOVER&rating=3` | Suche; Parameter `titel`, `isbn`, `rating` (min.), `art`, `lieferbar`, `schlagwort` werden mit UND verknüpft |
+| `GET /rest/titel/{teil}`       | Titel, die den Teilstring enthalten, als Liste                               |
+
+Fehler: `404` mit `{"detail": "..."}`, falls nichts gefunden wurde; `422`, falls ein
+Parameter ungültig ist (Validierung durch Pydantic und FastAPI).
+
+```shell
+curl -i http://localhost:8000/rest/1
+curl -i -H 'If-None-Match: "0"' http://localhost:8000/rest/1
+curl 'http://localhost:8000/rest?titel=a&art=HARDCOVER'
+```
+
+Die DB-Verbindung ist in `src/buch/config/db.py` konfiguriert und kann über
+Umgebungsvariablen mit dem Präfix `BUCH_DB_` (auch in einer `.env`) geändert werden,
+z.B. `BUCH_DB_LOG_STATEMENTS=false`.
+
+## Tests
+
+Die Integrationstests brauchen den laufenden PostgreSQL-Container mit den Testdaten:
+
+```shell
+uv run pytest
 ```
 
 ## Codeanalyse, Formatierung und Typprüfung
