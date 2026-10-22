@@ -1,0 +1,48 @@
+info:
+  name: POST Neues Buch
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{restUrl}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+          "titel": "Bruno",
+          "isbn": "978-3-{{$randomInt}}-00000-0",
+          "rating": 4,
+          "art": "HARDCOVER",
+          "preis": "29.90",
+          "rabatt": "0.05",
+          "lieferbar": true,
+          "erscheinungsdatum": "2026-03-01",
+          "homepage": "https://bruno.example.com",
+          "schlagwoerter": ["PYTHON"],
+          "verlag": {"name": "Bruno Verlag", "ort": "Karlsruhe"},
+          "rezensionen": [
+              {"bewertung": 5, "kommentar": "Mit Bruno angelegt"}
+          ]
+      }
+  auth: none
+
+docs:
+  content: |-
+    Antwort 201 ohne Body; der Header `Location` enthält die URL des neuen Buches.
+    `{{$randomInt}}` sorgt für eine neue ISBN bei jedem Aufruf.
+  type: text/markdown
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "201"
+    - expression: res.headers['location']
+      operator: isDefined
+    - expression: res.headers['etag']
+      operator: eq
+      value: '"0"'

@@ -1,0 +1,47 @@
+info:
+  name: PUT Buch 50 ändern
+  type: http
+  seq: 10
+
+http:
+  method: PUT
+  url: "{{restUrl}}/:id"
+  headers:
+    - name: If-Match
+      value: '"0"'
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: id
+      value: "50"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+          "titel": "Epsilon neu",
+          "isbn": "978-3-8273-3007-2",
+          "rating": 4,
+          "art": "PAPERBACK",
+          "preis": "55.50",
+          "rabatt": "0.055",
+          "lieferbar": true,
+          "erscheinungsdatum": "2025-02-05",
+          "homepage": "https://acme.es",
+          "schlagwoerter": ["PYTHON"]
+      }
+  auth: none
+
+docs:
+  content: |-
+    `If-Match` muss die Versionsnummer aus dem `ETag` des letzten GET enthalten.
+    Antwort 204 mit neuem `ETag`; danach den Wert in `If-Match` anpassen, sonst 412.
+  type: text/markdown
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+    - expression: res.headers['etag']
+      operator: isDefined

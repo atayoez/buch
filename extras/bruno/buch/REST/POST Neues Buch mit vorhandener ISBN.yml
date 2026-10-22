@@ -1,0 +1,28 @@
+info:
+  name: POST Neues Buch mit vorhandener ISBN
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{restUrl}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+          "titel": "Doppelt",
+          "isbn": "978-3-16-148410-0",
+          "rating": 1,
+          "preis": "9.99",
+          "verlag": {"name": "Irgendein Verlag"}
+      }
+  auth: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"
