@@ -15,9 +15,13 @@ Domäne: `Buch` mit genau einem `Verlag` (1:1) und beliebig vielen `Rezensionen`
 - [DB-Browser](#db-browser)
 - [Appserver](#appserver)
   - [REST-Schnittstelle (GET)](#rest-schnittstelle-get)
+  - [REST-Schnittstelle (POST)](#rest-schnittstelle-post)
   - [REST-Schnittstelle (PUT)](#rest-schnittstelle-put)
 - [Tests](#tests)
+  - [pytest](#pytest)
+  - [Bruno](#bruno)
 - [Codeanalyse, Formatierung und Typprüfung](#codeanalyse-formatierung-und-typprüfung)
+- [Checkliste der Vorlesung](#checkliste-der-vorlesung)
 - [Hinweis für Linux mit podman](#hinweis-für-linux-mit-podman)
 
 ## Voraussetzungen
@@ -136,6 +140,22 @@ Interaktive Dokumentation: `http://localhost:8000/docs`
 Fehler: `404` mit `{"detail": "..."}`, falls nichts gefunden wurde; `422`, falls ein
 Parameter ungültig ist (Validierung durch Pydantic und FastAPI).
 
+### REST-Schnittstelle (POST)
+
+| Request      | Beschreibung                                                                  |
+| ------------ | ----------------------------------------------------------------------------- |
+| `POST /rest` | Neues Buch mit Verlag (Pflicht, 1:1) und Rezensionen (optional, 1:N) anlegen; Antwort `201` ohne Body, Header `Location` mit der URL des neuen Buches und `ETag` `"0"` |
+
+Der Request-Body hat dieselben Attribute wie bei PUT, zusätzlich `verlag` mit `name`
+und `ort` sowie optional `rezensionen` mit je `bewertung` (1 bis 5) und `kommentar`.
+Die Validierung übernimmt Pydantic (`422` mit Fehlerliste); eine bereits vorhandene
+ISBN ergibt ebenfalls `422`.
+
+```shell
+curl -i -X POST http://localhost:8000/rest -H 'Content-Type: application/json' \
+  -d '{"titel":"Neu","isbn":"978-3-123-45678-9","rating":3,"art":"EPUB","preis":"19.99","verlag":{"name":"Neuer Verlag","ort":"Karlsruhe"},"rezensionen":[{"bewertung":5,"kommentar":"Top"}]}'
+```
+
 ### REST-Schnittstelle (PUT)
 
 | Request                                   | Beschreibung                                                     |
@@ -169,11 +189,23 @@ z.B. `BUCH_DB_LOG_STATEMENTS=false`.
 
 ## Tests
 
+### pytest
+
 Die Integrationstests brauchen den laufenden PostgreSQL-Container mit den Testdaten:
 
 ```shell
 uv run pytest
 ```
+
+Die POST-Tests legen bei jedem Lauf neue Bücher mit zufälliger ISBN an, die PUT-Tests
+ändern Buch 50. Zurücksetzen: siehe [Datenbank zurücksetzen](#datenbank-zurücksetzen).
+
+### Bruno
+
+Die Collection `extras/bruno/buch` enthält Requests für GET, POST und PUT mit
+Assertions. In _Bruno_: _Open Collection_, das Verzeichnis `extras/bruno/buch`
+wählen, Appserver mit `uv run buch` starten, Requests einzeln oder den Ordner `REST`
+als _Run_ ausführen.
 
 ## Codeanalyse, Formatierung und Typprüfung
 
@@ -184,6 +216,21 @@ uv run ruff check --preview src tests
 uv run ruff format --preview src tests
 uv run ty check src tests
 ```
+
+## Checkliste der Vorlesung
+
+| Punkt                                                        | Umsetzung                                                                 |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| PostgreSQL 18 als Docker Container, 1:1 und 1:N              | `extras/compose/postgres`: `buch` 1:1 `verlag`, `buch` 1:N `rezension`     |
+| DB-Browser                                                   | [DB-Browser](#db-browser)                                                 |
+| Git-Repository, commit early, commit often                   | https://github.com/atayoez/buch                                           |
+| `pyproject.toml` mit uv, ruff, ty                            | `[tool.uv]`, `[tool.ruff]`, `[tool.ty]` in `pyproject.toml`               |
+| REST mit FastAPI, Dependency Injection, Pydantic für Response | `src/buch/router`: `Depends(...)` für Session und Service, `BuchModel`     |
+| GET mit Pfad-/Query-Parametern, bedingter GET                | `GET /rest/{id}` mit `ETag`/`If-None-Match`, `GET /rest?...`              |
+| POST mit Validierung durch Pydantic                          | `POST /rest`, `BuchCreateModel`                                           |
+| PUT mit Validierung und Vermeidung von Lost Updates          | `PUT /rest/{id}`, `BuchUpdateModel`, `If-Match` mit Versionsnummer        |
+| DB-Zugriff durch SQLAlchemy                                  | `src/buch/entity`, `src/buch/repository`                                  |
+| Testen von GET und POST                                      | `tests/rest` mit pytest, `extras/bruno/buch` mit Bruno                    |
 
 ## Hinweis für Linux mit podman
 
