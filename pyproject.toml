@@ -46,3 +46,76 @@ lint = [
     "ruff>=0.17.1,<1.0.0",
     "ty>=0.0.90,<1.0.0",
 ]
+
+# https://docs.astral.sh/ruff/settings
+#
+#   uv run ruff check --preview [--fix] src tests
+#   uv run ruff format --preview [--check] src tests
+[tool.ruff]
+preview = true
+line-length = 88
+target-version = "py315"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# https://docs.astral.sh/ruff/rules
+select = [
+    "F",     # Pyflakes
+    "E",     # pycodestyle (error)
+    "W",     # pycodestyle (warning)
+    "I",     # isort
+    "N",     # pep8-naming
+    "D",     # pydocstyle
+    "UP",    # pyupgrade
+    "YTT",   # flake8-2020
+    "ASYNC", # flake8-async
+    "S",     # flake8-bandit (Sicherheit)
+    "BLE",   # flake8-blind-except
+    "FBT",   # flake8-boolean-trap
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "COM",   # flake8-commas
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "T10",   # flake8-debugger
+    "EXE",   # flake8-executable
+    "FA",    # flake8-future-annotations
+    "ISC",   # flake8-implicit-str-concat
+    "LOG",   # flake8-logging
+    "G",     # flake8-logging-format
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "RSE",   # flake8-raise
+    "RET",   # flake8-return
+    "SLF",   # flake8-self
+    "SIM",   # flake8-simplify
+    "TID",   # flake8-tidy-imports
+    "TC",    # flake8-type-checking
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+    "FLY",   # flynt
+    "PERF",  # Perflint
+    "PGH",   # pygrep-hooks
+    "PL",    # Pylint
+    "FURB",  # refurb
+    "RUF",   # Ruff-spezifisch
+    "TRY",   # tryceratops
+    "FAST",  # FastAPI
+]
+ignore = [
+    # Konflikt mit "multi-line-summary-first-line"
+    "incorrect-blank-line-before-class",
+    "multi-line-summary-second-line",
+    # https://github.com/astral-sh/ruff/issues/9216
+    "missing-trailing-comma",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["assert", "undocumented-public-function"]
