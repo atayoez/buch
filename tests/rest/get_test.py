@@ -1,11 +1,15 @@
 """Integrationstests für die GET-Requests der REST-Schnittstelle."""
 
+from typing import Any
+lazy from collections.abc import Callable
+
 import pytest
 from fastapi import status
 lazy from fastapi.testclient import TestClient
 
 ID_VORHANDEN = 1
 ID_NICHT_VORHANDEN = 999_999
+ISBN_VORHANDEN = "978-3-16-148410-0"
 REST = "/rest"
 
 
@@ -55,8 +59,58 @@ class TestGetById:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
+class TestGetByIsbn:
+    """GET /rest/isbn/{isbn}."""
+
+    def test_get_by_isbn(self, client: TestClient) -> None:
+        """Vorhandene ISBN: 200 mit Verlag, Rezensionen und ETag."""
+        response = client.get(f"{REST}/isbn/{ISBN_VORHANDEN}")
+
+        assert response.status_code == status.HTTP_200_OK
+        buch = response.json()
+        assert buch["isbn"] == ISBN_VORHANDEN
+        assert buch["verlag"] is not None
+        assert "rezensionen" in buch
+        assert response.headers["ETag"] == f'"{buch["version"]}"'
+
+    def test_get_by_isbn_not_modified(self, client: TestClient) -> None:
+        """If-None-Match mit aktueller Version: 304."""
+        etag = client.get(f"{REST}/isbn/{ISBN_VORHANDEN}").headers["ETag"]
+
+        response = client.get(
+            f"{REST}/isbn/{ISBN_VORHANDEN}", headers={"If-None-Match": etag}
+        )
+
+        assert response.status_code == status.HTTP_304_NOT_MODIFIED
+
+    def test_get_by_isbn_nicht_vorhanden(self, client: TestClient) -> None:
+        """Unbekannte ISBN: 404."""
+        response = client.get(f"{REST}/isbn/978-3-000-00000-0")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_by_isbn_ungueltig(self, client: TestClient) -> None:
+        """Kein ISBN-Format: 422."""
+        response = client.get(f"{REST}/isbn/123")
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
 class TestGet:
     """GET /rest mit Query-Parametern."""
+
+    def test_get_id(self, client: TestClient) -> None:
+        """Query-Parameter id liefert genau dieses Buch."""
+        response = client.get(REST, params={"id": ID_VORHANDEN})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [buch["id"] for buch in response.json()] == [ID_VORHANDEN]
+
+    def test_get_id_nicht_vorhanden(self, client: TestClient) -> None:
+        """Unbekannte id als Query-Parameter: 404."""
+        response = client.get(REST, params={"id": ID_NICHT_VORHANDEN})
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_alle(self, client: TestClient) -> None:
         """Ohne Query-Parameter: alle Bücher, jeweils mit Verlag."""
@@ -65,7 +119,8 @@ class TestGet:
         assert response.status_code == status.HTTP_200_OK
         buecher = response.json()
         assert len(buecher) >= 5
-        assert all(buch["verlag"] is not None for buch in buecher)
+        # die Testdaten (IDs unter 1000) haben alle einen Verlag
+        assert all(b["verlag"] is not None for b in buecher if b["id"] < 1000)
 
     @pytest.mark.parametrize("teil", ["a", "LPH", "gamma"])
     def test_get_titel_teil(self, client: TestClient, teil: str) -> None:
@@ -91,6 +146,34 @@ class TestGet:
         assert len(buecher) >= 1
         assert all(b["art"] == "HARDCOVER" and b["rating"] >= 3 for b in buecher)
 
+    @pytest.mark.parametrize(
+        ("params", "pruefung"),
+        [
+            ({"version": 0}, lambda b: b["version"] == 0),
+            ({"lieferbar": "false"}, lambda b: b["lieferbar"] is False),
+            ({"preis": "30"}, lambda b: float(b["preis"]) <= 30),
+            ({"rabatt": "0.04"}, lambda b: float(b["rabatt"]) >= 0.04),
+            ({"erscheinungsdatum": "2025-02-03"}, lambda b: b["titel"] == "Gamma"),
+            ({"homepage": "ACME.DE"}, lambda b: "acme.de" in b["homepage"]),
+            ({"verlag": "springer"}, lambda b: b["verlag"]["name"] == "Springer"),
+            ({"ort": "bonn"}, lambda b: b["verlag"]["ort"] == "Bonn"),
+            ({"verlag": "hanser", "ort": "münchen"}, lambda b: b["titel"] == "Delta"),
+        ],
+    )
+    def test_get_weitere_parameter(
+        self,
+        client: TestClient,
+        params: dict[str, str | int],
+        pruefung: Callable[[dict[str, Any]], bool],
+    ) -> None:
+        """Jedes Attribut ist Suchparameter, auch Verlag und Ort über den Join."""
+        response = client.get(REST, params=params)
+
+        assert response.status_code == status.HTTP_200_OK
+        buecher = response.json()
+        assert len(buecher) >= 1
+        assert all(pruefung(b) for b in buecher)
+
     def test_get_schlagwort(self, client: TestClient) -> None:
         """Schlagwort im JSON-Array."""
         response = client.get(REST, params={"schlagwort": "python"})
@@ -106,7 +189,13 @@ class TestGet:
 
     @pytest.mark.parametrize(
         "params",
-        [{"rating": 6}, {"art": "COMIC"}, {"isbn": "123"}, {"unbekannt": "x"}],
+        [
+            {"id": 0},
+            {"rating": 6},
+            {"art": "COMIC"},
+            {"isbn": "123"},
+            {"unbekannt": "x"},
+        ],
     )
     def test_get_ungueltige_parameter(
         self, client: TestClient, params: dict[str, str | int]
