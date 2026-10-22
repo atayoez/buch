@@ -14,13 +14,14 @@ Domäne: `Buch` mit genau einem `Verlag` (1:1) und beliebig vielen `Rezensionen`
 - [Datenbank zurücksetzen](#datenbank-zurücksetzen)
 - [DB-Browser](#db-browser)
 - [Appserver](#appserver)
+- [Codeanalyse, Formatierung und Typprüfung](#codeanalyse-formatierung-und-typprüfung)
 - [Hinweis für Linux mit podman](#hinweis-für-linux-mit-podman)
 
 ## Voraussetzungen
 
 - Git
 - Docker mit Docker Compose (für PostgreSQL)
-- Python 3.15 und _uv_ (für den Appserver, folgt)
+- _uv_ (installiert Python 3.15 bei Bedarf selbst)
 
 ## Repository klonen
 
@@ -105,7 +106,27 @@ Die drei Tabellen liegen im Schema `buch`.
 
 ## Appserver
 
-Folgt. Geplant: `uv sync --all-groups` und `uv run buch`.
+Abhängigkeiten installieren (legt `.venv` mit Python 3.15 an, _uv_ lädt Python bei Bedarf selbst):
+
+```shell
+uv sync --all-groups
+```
+
+Appserver starten, danach `http://localhost:8000` bzw. `http://localhost:8000/docs` aufrufen:
+
+```shell
+uv run buch
+```
+
+## Codeanalyse, Formatierung und Typprüfung
+
+Die Konfiguration steht in `pyproject.toml` (`[tool.ruff]`, `[tool.ty]`).
+
+```shell
+uv run ruff check --preview src tests
+uv run ruff format --preview src tests
+uv run ty check src tests
+```
 
 ## Hinweis für Linux mit podman
 
