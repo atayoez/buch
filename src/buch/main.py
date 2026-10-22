@@ -1,9 +1,24 @@
-"""FastAPI-App mit einem ersten GET-Request."""
+"""FastAPI-App: Router registrieren und Exceptions auf Statuscodes abbilden."""
 
-from fastapi import FastAPI
+from typing import Final
+
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from uvicorn import run
 
-app = FastAPI(title="buch")
+from buch.router import buch_router
+from buch.service import NotFoundError
+
+app: Final = FastAPI(title="buch", version="2026.10.1")
+app.include_router(buch_router)
+
+
+@app.exception_handler(NotFoundError)
+def not_found_handler(_request: Request, exc: NotFoundError) -> JSONResponse:
+    """NotFoundError aus der Geschäftslogik als 404 mit JSON-Body."""
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND, content={"detail": exc.message}
+    )
 
 
 @app.get("/")
