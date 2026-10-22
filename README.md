@@ -133,9 +133,23 @@ Interaktive Dokumentation: `http://localhost:8000/docs`
 | ------------------------------ | ---------------------------------------------------------------------------- |
 | `GET /rest/{id}`               | Ein Buch mit Verlag und Rezensionen; Header `ETag` mit der Versionsnummer     |
 | `GET /rest/{id}` + `If-None-Match: "<version>"` | Bedingter GET: `304 Not Modified`, falls unverändert            |
+| `GET /rest/isbn/{isbn}`        | Ein Buch über die ISBN, sonst wie `GET /rest/{id}`                           |
 | `GET /rest`                    | Alle Bücher (ohne Rezensionen)                                               |
-| `GET /rest?titel=a&art=HARDCOVER&rating=3` | Suche; Parameter `titel`, `isbn`, `rating` (min.), `art`, `lieferbar`, `schlagwort` werden mit UND verknüpft |
+| `GET /rest?...`                | Suche mit Query-Parametern, die mit UND verknüpft werden (siehe unten)       |
 | `GET /rest/titel/{teil}`       | Titel, die den Teilstring enthalten, als Liste                               |
+
+Jedes Attribut ist Suchparameter für `GET /rest`:
+
+| Parameter                                      | Vergleich                                   |
+| ---------------------------------------------- | ------------------------------------------- |
+| `id`, `version`, `isbn`, `art`, `lieferbar`, `erscheinungsdatum` | exakt                      |
+| `titel`, `homepage`, `verlag` (Name), `ort` (des Verlags) | Teilstring, Groß-/Kleinschreibung egal |
+| `rating`, `rabatt`                             | mindestens                                  |
+| `preis`                                        | höchstens                                   |
+| `schlagwort`                                   | im JSON-Array `schlagwoerter` enthalten     |
+
+Beispiele: `/rest?id=1`, `/rest?titel=a&art=HARDCOVER&rating=3`, `/rest?verlag=hanser&ort=münchen`,
+`/rest?preis=30&lieferbar=true`.
 
 Fehler: `404` mit `{"detail": "..."}`, falls nichts gefunden wurde; `422`, falls ein
 Parameter ungültig ist (Validierung durch Pydantic und FastAPI).
@@ -181,6 +195,7 @@ curl -i -X PUT http://localhost:8000/rest/50 -H 'If-Match: "0"' -H 'Content-Type
 curl -i http://localhost:8000/rest/1
 curl -i -H 'If-None-Match: "0"' http://localhost:8000/rest/1
 curl 'http://localhost:8000/rest?titel=a&art=HARDCOVER'
+curl http://localhost:8000/rest/isbn/978-3-16-148410-0
 ```
 
 Die DB-Verbindung ist in `src/buch/config/db.py` konfiguriert und kann über

@@ -1,0 +1,22 @@
+info:
+  name: GET Vorhandene ISBN
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{restUrl}}/isbn/:isbn"
+  params:
+    - name: isbn
+      value: 978-3-16-148410-0
+      type: path
+  auth: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.titel
+      operator: eq
+      value: Alpha

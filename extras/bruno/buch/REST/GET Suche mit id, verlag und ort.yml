@@ -1,0 +1,32 @@
+info:
+  name: GET Suche mit id, verlag und ort
+  type: http
+  seq: 14
+
+http:
+  method: GET
+  url: "{{restUrl}}?id=40&verlag=hanser&ort=münchen"
+  params:
+    - name: id
+      value: "40"
+      type: query
+    - name: verlag
+      value: hanser
+      type: query
+    - name: ort
+      value: münchen
+      type: query
+  auth: none
+
+docs:
+  content: Jedes Attribut ist Suchparameter; Verlag und Ort werden über den Join gesucht.
+  type: text/markdown
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body[0].titel
+      operator: eq
+      value: Delta
