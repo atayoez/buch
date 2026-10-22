@@ -1,0 +1,33 @@
+info:
+  name: POST Neues Buch mit ungültigen Daten
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{restUrl}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+          "titel": "",
+          "isbn": "123",
+          "rating": 6,
+          "art": "COMIC",
+          "preis": "-1",
+          "verlag": {"ort": "ohne Name"}
+      }
+  auth: none
+
+docs:
+  content: Validierung durch Pydantic, Antwort 422 mit einer Liste der Fehler.
+  type: text/markdown
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "422"

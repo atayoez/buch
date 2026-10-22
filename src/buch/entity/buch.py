@@ -51,7 +51,11 @@ class Buch(Base):
     )
     """Die Rezensionen in einer 1:N-Beziehung."""
 
-    __mapper_args__ = {"version_id_col": version}  # ruff: ignore[mutable-class-default]
+    __mapper_args__ = {  # ruff: ignore[mutable-class-default]
+        "version_id_col": version,
+        # Neue Bücher starten mit Version 0 (wie die Testdaten), jedes UPDATE zählt hoch
+        "version_id_generator": lambda version: 0 if version is None else version + 1,
+    }
 
     @override
     def __repr__(self) -> str:

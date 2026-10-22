@@ -1,0 +1,13 @@
+opencollection: 1.0.0
+
+info:
+  name: buch
+
+request:
+  variables:
+    - name: baseUrl
+      value: http://localhost:8000
+    - name: restUrl
+      value: "{{baseUrl}}/rest"
+bundled: false
+extensions: {}

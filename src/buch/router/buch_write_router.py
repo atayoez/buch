@@ -1,0 +1,103 @@
+"""Router für schreibende Zugriffe: POST /rest und PUT /rest/{id}."""
+
+from typing import Annotated, Final
+
+from fastapi import APIRouter, Depends, Header, Request, Response, status
+from loguru import logger
+
+from buch.router.dependencies import get_buch_write_service
+lazy from buch.router.buch_model import BuchCreateModel, BuchUpdateModel
+lazy from buch.service import BuchWriteService
+
+__all__ = ["buch_write_router"]
+
+buch_write_router: Final = APIRouter(prefix="/rest", tags=["Schreiben"])
+
+ETAG: Final = "ETag"
+IF_MATCH: Final = "If-Match"
+
+
+@buch_write_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": "Ungültige Daten oder ISBN bereits vorhanden"
+        },
+    },
+)
+def post(
+    create_model: BuchCreateModel,
+    request: Request,
+    service: Annotated[BuchWriteService, Depends(get_buch_write_service)],
+) -> Response:
+    """Ein neues Buch mit Verlag und optionalen Rezensionen anlegen.
+
+    Der Request-Body wird durch Pydantic validiert (422 bei Fehlern). Antwort:
+    201 ohne Body, der Header ``Location`` enthält die URL des neuen Buches und
+    ``ETag`` die Versionsnummer ``"0"``.
+    """
+    logger.debug("{}", create_model)
+    buch: Final = service.create(create_model.model_dump())
+    location: Final = str(request.url_for("get_by_id", buch_id=buch.id))
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        headers={"Location": location, ETAG: f'"{buch.version}"'},
+    )
+
+
+@buch_write_router.put(
+    "/{buch_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Kein Buch mit dieser ID"},
+        status.HTTP_412_PRECONDITION_FAILED: {
+            "description": "If-Match ist ungültig oder die Version ist veraltet"
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": "Ungültige Daten oder ISBN bereits vorhanden"
+        },
+        status.HTTP_428_PRECONDITION_REQUIRED: {"description": "Header If-Match fehlt"},
+    },
+)
+def put(
+    buch_id: int,
+    update_model: BuchUpdateModel,
+    service: Annotated[BuchWriteService, Depends(get_buch_write_service)],
+    if_match: Annotated[str | None, Header(alias=IF_MATCH)] = None,
+) -> Response:
+    """Ein Buch vollständig überschreiben.
+
+    Der Header ``If-Match`` muss die zuletzt gelesene Versionsnummer enthalten,
+    z.B. ``"0"`` aus dem ``ETag`` von ``GET /rest/{id}``. Damit werden Lost Updates
+    vermieden. Antwort: 204 mit dem neuen ``ETag``.
+    """
+    logger.debug("buch_id={}, if_match={}, {}", buch_id, if_match, update_model)
+    if if_match is None:
+        return Response(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            content="Header If-Match fehlt",
+        )
+    version: Final = _parse_version(if_match)
+    if version is None:
+        return Response(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            content=f"Ungültiger Header If-Match: {if_match}",
+        )
+    buch: Final = service.update(
+        buch_id=buch_id, version=version, daten=update_model.model_dump()
+    )
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT, headers={ETAG: f'"{buch.version}"'}
+    )
+
+
+def _parse_version(if_match: str) -> int | None:
+    """Versionsnummer aus ``"<zahl>"`` lesen, sonst None."""
+    min_len: Final = 3
+    if len(if_match) < min_len or not (if_match[0] == if_match[-1] == '"'):
+        return None
+    try:
+        return int(if_match[1:-1])
+    except ValueError:
+        return None

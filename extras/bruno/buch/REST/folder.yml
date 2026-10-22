@@ -1,0 +1,11 @@
+info:
+  name: REST
+  type: folder
+  seq: 1
+
+request:
+  auth: none
+
+docs:
+  content: REST-Schnittstelle für Bücher. Vorher `uv run buch` starten.
+  type: text/markdown

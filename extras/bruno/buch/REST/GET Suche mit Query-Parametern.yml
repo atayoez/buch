@@ -1,0 +1,27 @@
+info:
+  name: GET Suche mit Query-Parametern
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{restUrl}}?titel=a&art=HARDCOVER&rating=3"
+  params:
+    - name: titel
+      value: a
+      type: query
+    - name: art
+      value: HARDCOVER
+      type: query
+    - name: rating
+      value: "3"
+      type: query
+  auth: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body
+      operator: isArray

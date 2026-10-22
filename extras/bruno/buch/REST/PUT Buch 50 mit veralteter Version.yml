@@ -1,0 +1,33 @@
+info:
+  name: PUT Buch 50 mit veralteter Version
+  type: http
+  seq: 11
+
+http:
+  method: PUT
+  url: "{{restUrl}}/:id"
+  headers:
+    - name: If-Match
+      value: '"-1"'
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: id
+      value: "50"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+          "titel": "Lost Update",
+          "isbn": "978-3-8273-3007-2",
+          "rating": 2,
+          "preis": "55.50"
+      }
+  auth: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "412"
