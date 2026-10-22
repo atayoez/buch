@@ -130,3 +130,11 @@ root = ["./src", "./tests"]
 [tool.ty.rules]
 # https://docs.astral.sh/ty/reference/rules
 possibly-unresolved-reference = "error"
+
+# https://docs.pytest.org/en/stable/reference/customize.html
+#
+#   uv run pytest
+[tool.pytest.ini_options]
+minversion = "9.1"
+testpaths = ["tests"]
+addopts = "-r A"
