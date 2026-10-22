@@ -1,14 +1,10 @@
 """Erster Test: GET-Request auf "/" mit dem TestClient von FastAPI."""
 
 from fastapi import status
-from fastapi.testclient import TestClient
-
-from buch import app
-
-client = TestClient(app)
+lazy from fastapi.testclient import TestClient
 
 
-def test_hello() -> None:
+def test_hello(client: TestClient) -> None:
     """GET / liefert 200 und "Hello World"."""
     response = client.get("/")
 
