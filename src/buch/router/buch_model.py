@@ -8,10 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field
 lazy from buch.entity import Buchart
 
 __all__ = [
+    "BuchCreateModel",
     "BuchFindModel",
     "BuchModel",
     "BuchUpdateModel",
+    "RezensionCreateModel",
     "RezensionModel",
+    "VerlagCreateModel",
     "VerlagModel",
 ]
 
@@ -88,3 +91,28 @@ class BuchUpdateModel(BaseModel):
     erscheinungsdatum: date | None = None
     homepage: str | None = Field(default=None, max_length=200)
     schlagwoerter: list[str] | None = None
+
+
+class VerlagCreateModel(BaseModel):
+    """Verlag im Request-Body von POST /rest."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=100)
+    ort: str | None = Field(default=None, max_length=100)
+
+
+class RezensionCreateModel(BaseModel):
+    """Rezension im Request-Body von POST /rest."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    bewertung: int = Field(ge=1, le=5)
+    kommentar: str | None = Field(default=None, max_length=1000)
+
+
+class BuchCreateModel(BuchUpdateModel):
+    """Request-Body für POST /rest: wie PUT plus Verlag (Pflicht) und Rezensionen."""
+
+    verlag: VerlagCreateModel
+    rezensionen: list[RezensionCreateModel] = []

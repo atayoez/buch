@@ -1,12 +1,12 @@
-"""Router für schreibende Zugriffe: PUT /rest/{id}."""
+"""Router für schreibende Zugriffe: POST /rest und PUT /rest/{id}."""
 
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, Header, Response, status
+from fastapi import APIRouter, Depends, Header, Request, Response, status
 from loguru import logger
 
 from buch.router.dependencies import get_buch_write_service
-lazy from buch.router.buch_model import BuchUpdateModel
+lazy from buch.router.buch_model import BuchCreateModel, BuchUpdateModel
 lazy from buch.service import BuchWriteService
 
 __all__ = ["buch_write_router"]
@@ -15,6 +15,35 @@ buch_write_router: Final = APIRouter(prefix="/rest", tags=["Schreiben"])
 
 ETAG: Final = "ETag"
 IF_MATCH: Final = "If-Match"
+
+
+@buch_write_router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": "Ungültige Daten oder ISBN bereits vorhanden"
+        },
+    },
+)
+def post(
+    create_model: BuchCreateModel,
+    request: Request,
+    service: Annotated[BuchWriteService, Depends(get_buch_write_service)],
+) -> Response:
+    """Ein neues Buch mit Verlag und optionalen Rezensionen anlegen.
+
+    Der Request-Body wird durch Pydantic validiert (422 bei Fehlern). Antwort:
+    201 ohne Body, der Header ``Location`` enthält die URL des neuen Buches und
+    ``ETag`` die Versionsnummer ``"0"``.
+    """
+    logger.debug("{}", create_model)
+    buch: Final = service.create(create_model.model_dump())
+    location: Final = str(request.url_for("get_by_id", buch_id=buch.id))
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        headers={"Location": location, ETAG: f'"{buch.version}"'},
+    )
 
 
 @buch_write_router.put(
