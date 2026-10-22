@@ -67,6 +67,21 @@ class BuchRepository:
         logger.debug("{}: {} Treffer", suchparameter, len(buecher))
         return buecher
 
+    def exists_isbn(self, isbn: str, session: Session) -> bool:
+        """Prüft, ob es bereits ein Buch mit der ISBN gibt.
+
+        Args:
+            isbn: die zu prüfende ISBN
+            session: Session für SQLAlchemy
+
+        Returns:
+            True, falls die ISBN vorhanden ist
+        """
+        statement: Final = (
+            select(func.count()).select_from(Buch).where(Buch.isbn == isbn)
+        )
+        return (session.scalar(statement) or 0) > 0
+
     def exists_isbn_other_id(self, isbn: str, buch_id: int, session: Session) -> bool:
         """Prüft, ob die ISBN bereits bei einem anderen Buch vorhanden ist.
 
@@ -84,6 +99,21 @@ class BuchRepository:
             .where(Buch.isbn == isbn, Buch.id != buch_id)
         )
         return (session.scalar(statement) or 0) > 0
+
+    def save(self, buch: Buch, session: Session) -> Buch:
+        """Ein neues Buch einschließlich Verlag und Rezensionen speichern.
+
+        Args:
+            buch: das neue Buch, noch ohne ID
+            session: Session für SQLAlchemy
+
+        Returns:
+            Das gespeicherte Buch mit generierter ID
+        """
+        session.add(buch)
+        session.flush()
+        logger.debug("gespeichert: {}", buch)
+        return buch
 
     def find_titel(self, teil: str, session: Session) -> Sequence[str]:
         """Titel suchen, die den Teilstring enthalten.

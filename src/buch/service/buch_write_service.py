@@ -5,8 +5,8 @@ from typing import Any, Final
 from loguru import logger
 lazy from sqlalchemy.orm import Session
 
+from buch.entity import Buch, Rezension, Verlag
 from buch.service.exceptions import IsbnExistsError, NotFoundError, VersionOutdatedError
-lazy from buch.entity import Buch
 lazy from buch.repository import BuchRepository
 
 __all__ = ["BuchWriteService"]
@@ -19,6 +19,33 @@ class BuchWriteService:
         """Konstruktor mit injiziertem Repository und injizierter Session."""
         self.repo: Final = repo
         self.session: Final = session
+
+    def create(self, daten: dict[str, Any]) -> Buch:
+        """Ein neues Buch mit Verlag (1:1) und Rezensionen (1:N) anlegen.
+
+        Args:
+            daten: Validierte Daten aus dem Request-Body; ``verlag`` ist ein dict,
+                ``rezensionen`` eine Liste von dicts
+
+        Returns:
+            Das neue Buch mit generierter ID und Version 0
+
+        Raises:
+            IsbnExistsError: Falls die ISBN bereits vorhanden ist
+        """
+        logger.debug("daten={}", daten)
+        isbn: Final[str] = daten["isbn"]
+        if self.repo.exists_isbn(isbn=isbn, session=self.session):
+            raise IsbnExistsError(isbn)
+
+        verlag: Final = Verlag(**daten.pop("verlag"))
+        rezensionen: Final = [Rezension(**r) for r in daten.pop("rezensionen", [])]
+        buch: Final = Buch(**daten, verlag=verlag, rezensionen=rezensionen)
+        self.repo.save(buch=buch, session=self.session)
+        self.session.commit()
+        self.session.refresh(buch)
+        logger.debug("angelegt: {}", buch)
+        return buch
 
     def update(self, buch_id: int, version: int, daten: dict[str, Any]) -> Buch:
         """Ein vorhandenes Buch mit neuen Daten überschreiben.
