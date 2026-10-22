@@ -67,6 +67,24 @@ class BuchRepository:
         logger.debug("{}: {} Treffer", suchparameter, len(buecher))
         return buecher
 
+    def exists_isbn_other_id(self, isbn: str, buch_id: int, session: Session) -> bool:
+        """Prüft, ob die ISBN bereits bei einem anderen Buch vorhanden ist.
+
+        Args:
+            isbn: die zu prüfende ISBN
+            buch_id: ID des Buches, das selbst nicht zählt
+            session: Session für SQLAlchemy
+
+        Returns:
+            True, falls ein anderes Buch diese ISBN hat
+        """
+        statement: Final = (
+            select(func.count())
+            .select_from(Buch)
+            .where(Buch.isbn == isbn, Buch.id != buch_id)
+        )
+        return (session.scalar(statement) or 0) > 0
+
     def find_titel(self, teil: str, session: Session) -> Sequence[str]:
         """Titel suchen, die den Teilstring enthalten.
 
