@@ -60,18 +60,32 @@ class BuchModel(BaseModel):
 
 
 class BuchFindModel(BaseModel):
-    """Query-Parameter für GET /rest, validiert durch Pydantic."""
+    """Query-Parameter für GET /rest, validiert durch Pydantic.
+
+    Alle Parameter sind optional und werden mit UND verknüpft. ``titel``,
+    ``homepage``, ``verlag`` und ``ort`` suchen nach Teilstrings, ``rating`` und
+    ``rabatt`` sind Untergrenzen, ``preis`` ist eine Obergrenze, ``schlagwort`` muss
+    im JSON-Array enthalten sein; alle anderen vergleichen exakt.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
+    id: int | None = Field(default=None, ge=1)
+    version: int | None = Field(default=None, ge=0)
     titel: str | None = Field(default=None, max_length=100)
     isbn: str | None = Field(
         default=None, pattern=r"^97[89]-\d{1,5}-\d{1,7}-\d{1,7}-\d$"
     )
     rating: int | None = Field(default=None, ge=0, le=5)
     art: Buchart | None = None
+    preis: Decimal | None = Field(default=None, ge=0)
+    rabatt: Decimal | None = Field(default=None, ge=0, lt=1)
     lieferbar: bool | None = None
+    erscheinungsdatum: date | None = None
+    homepage: str | None = Field(default=None, max_length=200)
     schlagwort: str | None = Field(default=None, max_length=50)
+    verlag: str | None = Field(default=None, max_length=100)
+    ort: str | None = Field(default=None, max_length=100)
 
 
 class BuchUpdateModel(BaseModel):

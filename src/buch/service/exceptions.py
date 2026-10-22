@@ -12,12 +12,15 @@ class NotFoundError(Exception):
         self,
         *,
         buch_id: int | None = None,
+        isbn: str | None = None,
         suchparameter: BuchSuchparameter | None = None,
         teil: str | None = None,
     ) -> None:
         """Konstruktor; genau ein Argument beschreibt, wonach gesucht wurde."""
         if buch_id is not None:
             self.message = f"Kein Buch mit der ID {buch_id}"
+        elif isbn is not None:
+            self.message = f"Kein Buch mit der ISBN {isbn}"
         elif suchparameter is not None:
             self.message = f"Keine Bücher gefunden: {suchparameter}"
         elif teil is not None:

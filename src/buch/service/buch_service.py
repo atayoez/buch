@@ -32,6 +32,17 @@ class BuchService:
             raise NotFoundError(buch_id=buch_id)
         return buch
 
+    def find_by_isbn(self, isbn: str) -> Buch:
+        """Suche mit der ISBN.
+
+        Raises:
+            NotFoundError: Falls es kein Buch mit der ISBN gibt
+        """
+        buch: Final = self.repo.find_by_isbn(isbn=isbn, session=self.session)
+        if buch is None:
+            raise NotFoundError(isbn=isbn)
+        return buch
+
     def find(self, suchparameter: BuchSuchparameter) -> Sequence[Buch]:
         """Suche mit Suchparametern.
 
